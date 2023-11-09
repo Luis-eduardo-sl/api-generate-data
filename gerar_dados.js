@@ -9,7 +9,7 @@ async function generateRandomUser() {
     return {
       email: faker.internet.email(),
       name: faker.person.fullName(),
-      password: await bcrypt.hash(faker.internet.password(), 10),
+      password: await bcrypt.hash(faker.internet.password(), 10),  
     };
 }
 
