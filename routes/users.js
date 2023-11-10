@@ -6,6 +6,7 @@ const { PrismaClientKnownRequestError, PrismaClientValidationError } = require('
 const prisma = new PrismaClient({errorFormat: 'minimal'});
 const bcrypt = require('bcryptjs');
 const { generateAccessToken, authenticateToken } = require('../auth');
+const uploadSingle = require('../middleware/uploadSingle');
 
 function exceptionHandler(e) {
   console.log(e);
@@ -59,7 +60,7 @@ router.get('/', async (req, res) => {
 });
 
 // /api/users
-router.post('/', async (req, res) =>{
+router.post('/',uploadSingle, async (req, res) =>{
   try {
     const data = req.body;
     if (!data.password || data.password.lenght < 8) {
@@ -69,12 +70,19 @@ router.post('/', async (req, res) =>{
     }
     data.password = await bcrypt.hash(data.password, 10);
 
+    const upload= req.upload || null;
+    if(upload){
+      console.log(upload);
+      data.image = upload.path;
+    }
+
     const user = await prisma.user.create({
       data: data,
       select: {
         id: true,
         name: true,
-        email: true
+        email: true,
+        image : true
       }
     });
     const jwt = generateAccessToken(user);
@@ -96,8 +104,15 @@ router.get('/:id', async (req, res) => {
     const user = await prisma.user.findUniqueOrThrow({
       where: {
         id: id
+      },
+      select:{
+        id: true,
+        email: true,
+        name: true,
+        image: true
       }
     });
+    user.image = `http://127.0.01:5000${user.image}`
     res.json(user);
   }
   catch (exception) {
